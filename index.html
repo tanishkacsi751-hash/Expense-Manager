@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Expense Tracker Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: #0f172a;
+    color: #e5e7eb;
+}
+
+.header {
+    background: #020617;
+    padding: 15px 20px;
+    font-size: 20px;
+    font-weight: 600;
+    border-bottom: 1px solid #1e293b;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 20px auto;
+    padding: 15px;
+}
+
+.card {
+    background: #111827;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #1f2937;
+}
+
+.form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+input, select, button {
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    border: 1px solid #374151;
+    background: #020617;
+    color: white;
+}
+
+button {
+    background: #2563eb;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+.summary {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+    border-bottom: 1px solid #1f2937;
+}
+
+th {
+    background: #020617;
+}
+
+tr:hover {
+    background: #1e293b;
+}
+
+.delete {
+    color: #ef4444;
+    cursor: pointer;
+}
+
+.remove {
+    color: #facc15;
+    cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">💼 Expense Tracker (Technical Dashboard)</div>
+
+<div class="container">
+
+    <div class="card">
+        <div class="form">
+            <input type="text" id="desc" placeholder="Description">
+            <input type="number" id="amount" placeholder="Amount">
+            <input type="date" id="date">
+
+            <select id="category">
+                <option>Food</option>
+                <option>Travel</option>
+                <option>Shopping</option>
+                <option>Bills</option>
+                <option>Grocery</option>
+                <option>Extra</option>
+            </select>
+
+            <button onclick="addExpense()">Add Expense</button>
+        </div>
+    </div>
+
+    <div class="card summary">
+        <div>Total: ₹ <span id="total">0</span></div>
+        <div>This Month: ₹ <span id="monthTotal">0</span></div>
+    </div>
+
+    <div class="card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th>Status / Action</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+let expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+
+function addExpense() {
+    let desc = document.getElementById("desc").value;
+    let amount = document.getElementById("amount").value;
+    let date = document.getElementById("date").value;
+    let category = document.getElementById("category").value;
+
+    if (!desc || !amount || !date) {
+        alert("Fill all fields");
+        return;
+    }
+
+    expenses.push({
+        desc,
+        amount: parseFloat(amount),
+        date,
+        category,
+        createdAt: new Date().getTime()
+    });
+
+    localStorage.setItem("expenses", JSON.stringify(expenses));
+    render();
+    clearInputs();
+}
+
+function render() {
+    let tbody = document.getElementById("tableBody");
+    let total = 0;
+    let monthTotal = 0;
+    let currentMonth = new Date().getMonth();
+
+    tbody.innerHTML = "";
+
+    expenses.forEach((exp, index) => {
+        total += exp.amount;
+
+        let expMonth = new Date(exp.date).getMonth();
+        if (expMonth === currentMonth) {
+            monthTotal += exp.amount;
+        }
+
+        let now = new Date().getTime();
+        let daysPassed = (now - exp.createdAt) / (1000 * 60 * 60 * 24);
+        let remainingDays = Math.ceil(30 - daysPassed);
+
+        let action = `
+            <span class="remove" onclick="deleteExpense(${index})">Remove</span>
+        `;
+
+        if (daysPassed >= 30) {
+            action += ` | <span class="delete" onclick="deleteExpense(${index})">Delete</span>`;
+        } else {
+            action += ` | <span style="color:gray">Locked (${remainingDays} days)</span>`;
+        }
+
+        let row = `
+            <tr>
+                <td>${exp.desc}</td>
+                <td>₹${exp.amount}</td>
+                <td>${exp.category}</td>
+                <td>${exp.date}</td>
+                <td>${action}</td>
+            </tr>
+        `;
+
+        tbody.innerHTML += row;
+    });
+
+    document.getElementById("total").innerText = total;
+    document.getElementById("monthTotal").innerText = monthTotal;
+}
+
+function deleteExpense(index) {
+    expenses.splice(index, 1);
+    localStorage.setItem("expenses", JSON.stringify(expenses));
+    render();
+}
+
+function clearInputs() {
+    document.getElementById("desc").value = "";
+    document.getElementById("amount").value = "";
+    document.getElementById("date").value = "";
+}
+
+render();
+</script>
+
+</body>
+</html>
