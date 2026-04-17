@@ -9,7 +9,11 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<!-- ✅ SweetAlert CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <style>
+/* ✅ SAME CSS (unchanged) */
 body {
     margin: 0;
     font-family: 'Inter', sans-serif;
@@ -79,11 +83,12 @@ canvas {
     max-height: 300px;
 }
 
+/* SECOND STYLE (same as yours) */
 body {
     margin: 0;
     font-family: 'Inter', sans-serif;
-    background: #0b1220; /* darker but cleaner */
-    color: #f9fafb; /* bright white */
+    background: #0b1220;
+    color: #f9fafb;
 }
 
 .header {
@@ -114,7 +119,6 @@ td {
     color: #e5e7eb;
 }
 
-/* MOBILE */
 @media (max-width: 768px) {
     .form { grid-template-columns: 1fr; }
     .summary { flex-direction: column; text-align: center; gap: 10px; }
@@ -124,7 +128,7 @@ td {
 
 <body>
 
-<div class="header">💼 Expense Tracker By Tanishka </div>
+<div class="header">💼 Expense Tracker By Tanishka</div>
 
 <div class="container">
 
@@ -182,10 +186,9 @@ td {
 <script>
 let expenses = JSON.parse(localStorage.getItem("expenses")) || [];
 let editIndex = -1;
-
 let pieChart, barChart;
 
-// AUTO DATE
+// DATE
 function setTodayDate() {
     let today = new Date().toISOString().split('T')[0];
     document.getElementById("date").value = today;
@@ -198,7 +201,10 @@ function addExpense() {
     let date = document.getElementById("date").value;
     let category = document.getElementById("category").value;
 
-    if (!desc || !amount || !date) return alert("Fill all fields");
+    if (!desc || !amount || !date) {
+        Swal.fire("Error!", "Please fill all fields", "error");
+        return;
+    }
 
     if (editIndex === -1) {
         expenses.push({
@@ -208,6 +214,9 @@ function addExpense() {
             category,
             createdAt: new Date().getTime()
         });
+
+        Swal.fire("Success!", "Expense added successfully", "success");
+
     } else {
         expenses[editIndex] = {
             ...expenses[editIndex],
@@ -216,12 +225,53 @@ function addExpense() {
             date,
             category
         };
+
         editIndex = -1;
+
+        Swal.fire("Updated!", "Expense updated successfully", "success");
     }
 
     localStorage.setItem("expenses", JSON.stringify(expenses));
     render();
     clearInputs();
+}
+
+// DELETE WITH CONFIRM
+function deleteExpense(index) {
+    Swal.fire({
+        title: "Are you sure?",
+        text: "You won't be able to revert this!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        confirmButtonText: "Yes, delete it!"
+    }).then((result) => {
+        if (result.isConfirmed) {
+            expenses.splice(index, 1);
+            localStorage.setItem("expenses", JSON.stringify(expenses));
+            render();
+            Swal.fire("Deleted!", "Expense removed", "success");
+        }
+    });
+}
+
+// EDIT
+function editExpense(index) {
+    let exp = expenses[index];
+
+    document.getElementById("desc").value = exp.desc;
+    document.getElementById("amount").value = exp.amount;
+    document.getElementById("date").value = exp.date;
+    document.getElementById("category").value = exp.category;
+
+    editIndex = index;
+}
+
+// CLEAR
+function clearInputs() {
+    document.getElementById("desc").value = "";
+    document.getElementById("amount").value = "";
+    setTodayDate();
 }
 
 // RENDER
@@ -240,20 +290,17 @@ function render() {
             monthTotal += exp.amount;
         }
 
-        let row = `
+        tbody.innerHTML += `
         <tr>
             <td>${exp.desc}</td>
             <td>₹${exp.amount}</td>
             <td>${exp.category}</td>
             <td>${exp.date}</td>
-            <td class="d-flex flex-wrap gap-1">
+            <td class="d-flex gap-1">
                 <button class="btn btn-sm btn-info" onclick="editExpense(${index})">✏️</button>
                 <button class="btn btn-sm btn-danger" onclick="deleteExpense(${index})">🗑</button>
             </td>
-        </tr>
-        `;
-
-        tbody.innerHTML += row;
+        </tr>`;
     });
 
     document.getElementById("total").innerText = total;
@@ -262,35 +309,8 @@ function render() {
     renderCharts();
 }
 
-// EDIT
-function editExpense(index) {
-    let exp = expenses[index];
-
-    document.getElementById("desc").value = exp.desc;
-    document.getElementById("amount").value = exp.amount;
-    document.getElementById("date").value = exp.date;
-    document.getElementById("category").value = exp.category;
-
-    editIndex = index;
-}
-
-// DELETE
-function deleteExpense(index) {
-    expenses.splice(index, 1);
-    localStorage.setItem("expenses", JSON.stringify(expenses));
-    render();
-}
-
-// CLEAR
-function clearInputs() {
-    document.getElementById("desc").value = "";
-    document.getElementById("amount").value = "";
-    setTodayDate();
-}
-
 // CHARTS
 function renderCharts() {
-
     let categoryData = {};
     expenses.forEach(exp => {
         categoryData[exp.category] = (categoryData[exp.category] || 0) + exp.amount;
